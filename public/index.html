@@ -7,6 +7,8 @@
 <body>
 
   <style>
+    * { box-sizing: border-box; }
+
     html, body {
       border: 0;
       height: 100%;
@@ -15,17 +17,25 @@
       padding: 0;
       width: 100%;
     }
+
+    canvas {
+      left: 50%;
+      position: absolute;
+      top: 50%;
+    }
   </style>
 
-  <canvas width="1000" height="600"></canvas>
+  <canvas></canvas>
 
   <script src="./sylvester.src.js"></script>
-  <!-- <script src="./async.js"></script> -->
   <script>
   var canvas = document.querySelector("canvas")
   var ctx = canvas.getContext("2d")
   var width = canvas.width
   var height = canvas.height
+  var detailLevel = 1
+
+  var sixtyDegrees = Matrix.Rotation(Math.PI / 180 * 60)
 
   function divideLine (division, start, end) {
     return $V([
@@ -34,76 +44,64 @@
     ])
   }
 
-  // var drawQueue = async.queue(function (job, done) {
-  //   setTimeout(function () {
-  //     ctx.beginPath()
-  //     drawLine(job.s, job.e)
-  //     ctx.closePath()
-  //     ctx.stroke()
-  //     done()
-  //   }, 0)
-  // }, 4)
-
-  // function queue (s, e) {
-  //   drawQueue.push({s:s, e:e})
-  // }
-
   function drawLine (parentStart, parentEnd) {
     var lineLength = parentStart.distanceFrom(parentEnd)
 
     // stop drawing when it's smaller than 1px
-    if (lineLength <= 1) {
+    if (lineLength <= detailLevel) {
       ctx.moveTo(parentStart.elements[0], parentStart.elements[1])
       ctx.lineTo(parentEnd.elements[0], parentEnd.elements[1])
     }
     else {
       var oneThirdPoint = divideLine(1/3, parentStart, parentEnd)
       var twoThirdPoint = divideLine(1/2, oneThirdPoint, parentEnd)
-      var centerPoint = divideLine(1/2, parentStart, parentEnd)
-      twoThirdPoint.distanceFrom(centerPoint)
-      centerPoint = Matrix.Rotation(Math.PI / 180 * 90).multiply(oneThirdPoint.subtract(centerPoint)).add(centerPoint)
+      var tipPoint = sixtyDegrees.multiply(oneThirdPoint.subtract(twoThirdPoint)).add(twoThirdPoint)
       drawLine(parentStart, oneThirdPoint)
-      drawLine(oneThirdPoint, centerPoint)
-      drawLine(centerPoint, twoThirdPoint)
+      drawLine(oneThirdPoint, tipPoint)
+      drawLine(tipPoint, twoThirdPoint)
       drawLine(twoThirdPoint, parentEnd)
     }
   }
 
-  function size () {
-    canvas.width = document.documentElement.clientWidth
-    canvas.height = document.documentElement.clientHeight
+  var pageWidth = 0
+  var pageHeight = 0
+  detailLevel = document.documentElement.clientWidth
+
+  function reDraw () {
+    pageWidth = document.documentElement.clientWidth
+    pageHeight = document.documentElement.clientHeight
+
+    var length = Math.min(pageWidth, pageHeight)
+    var vPadding = length * 0.265
+    var hPadding = length * 0.1
+    var lineLength = length - (hPadding * 2)
+    var triangleHeight = Math.sqrt(Math.pow(lineLength, 2) - Math.pow(lineLength / 2, 2))
+
+    canvas.height = canvas.width = length
+    canvas.style.marginLeft = canvas.style.marginTop = (-length / 2) + "px"
+
+    var topLeft = $V([hPadding, vPadding])
+    var topRight = $V([length - hPadding, vPadding])
+    var bottomCenter = $V([length / 2, triangleHeight + vPadding])
+
+    ctx.beginPath()
+    drawLine(topLeft, topRight)
+    drawLine(topRight, bottomCenter)
+    drawLine(bottomCenter, topLeft)
+    ctx.closePath()
+    ctx.stroke()
   }
-  size()
-  window.addEventListener("resize", size, false)
+  reDraw()
+  window.addEventListener("resize", reDraw, false)
 
-  var lastPoint = null
-  var currentPoint = null
-  var interval
   window.addEventListener("mousemove", function (e) {
-    if (!lastPoint) lastPoint = e
-    currentPoint = e
+    detailLevel = Math.max(e.pageX, 1)
+    reDraw()
   }, false)
 
-  window.addEventListener("mousedown", function (e) {
-    lastPoint = e
-    interval = setInterval(function () {
-      if (!lastPoint) return
-      ctx.beginPath()
-      if (Math.random() < 0.5) {
-        drawLine($V([lastPoint.layerX, lastPoint.layerY]), $V([currentPoint.layerX, currentPoint.layerY]))
-      }
-      else {
-        drawLine($V([currentPoint.layerX, currentPoint.layerY]), $V([lastPoint.layerX, lastPoint.layerY]))
-      }
-      ctx.closePath()
-      ctx.stroke()
-      lastPoint = currentPoint
-    }, 250)
-  }, false)
 
-  window.addEventListener("mouseup", function (e) {
-    clearInterval(interval)
-  })
+
+
 
   </script>
 </html>
