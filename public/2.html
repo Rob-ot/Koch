@@ -46,14 +46,14 @@
   }
 
   var drawQueue = async.queue(function (job, done) {
+    ctx.beginPath()
+    drawLine(job.s, job.e)
+    ctx.closePath()
+    ctx.stroke()
     setTimeout(function () {
-      ctx.beginPath()
-      drawLine(job.s, job.e)
-      ctx.closePath()
-      ctx.stroke()
       done()
     }, 0)
-  }, 4)
+  }, 1)
 
   function queue (s, e) {
     drawQueue.push({s:s, e:e})
