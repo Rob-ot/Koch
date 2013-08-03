@@ -33,7 +33,7 @@
   var ctx = canvas.getContext("2d")
   var width = canvas.width
   var height = canvas.height
-  var detailLevel = 1
+  var detailLevel = 10
 
   var sixtyDegrees = Matrix.Rotation(Math.PI / 180 * 60)
 
@@ -65,20 +65,22 @@
 
   var pageWidth = 0
   var pageHeight = 0
-  detailLevel = document.documentElement.clientWidth
 
-  function reDraw () {
+  function reDraw (extraPadding, clear) {
     pageWidth = document.documentElement.clientWidth
     pageHeight = document.documentElement.clientHeight
 
     var length = Math.min(pageWidth, pageHeight)
-    var vPadding = length * 0.265
-    var hPadding = length * 0.1
+    var vPadding = length * 0.265 + extraPadding
+    var hPadding = length * 0.1 + extraPadding
     var lineLength = length - (hPadding * 2)
+    if (lineLength < 0) return
     var triangleHeight = Math.sqrt(Math.pow(lineLength, 2) - Math.pow(lineLength / 2, 2))
 
-    canvas.height = canvas.width = length
-    canvas.style.marginLeft = canvas.style.marginTop = (-length / 2) + "px"
+    if (clear) {
+      canvas.height = canvas.width = length
+      canvas.style.marginLeft = canvas.style.marginTop = (-length / 2) + "px"
+    }
 
     var topLeft = $V([hPadding, vPadding])
     var topRight = $V([length - hPadding, vPadding])
@@ -91,13 +93,23 @@
     ctx.closePath()
     ctx.stroke()
   }
-  reDraw()
-  window.addEventListener("resize", reDraw, false)
 
-  window.addEventListener("mousemove", function (e) {
-    detailLevel = Math.max(e.pageX, 1)
-    reDraw()
-  }, false)
+  function drawAll () {
+    var inc = 10
+    var max = 3000
+
+    reDraw(0, true)
+
+    for (var i = inc; i <= max; i += inc) {
+      setTimeout((function (i) {
+        return function () {
+          reDraw(i)
+        }
+      }(i)), 50 * i)
+    }
+  }
+  drawAll()
+  window.addEventListener("resize", drawAll, false)
 
   </script>
 </html>
