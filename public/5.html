@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Koch</title>
+</head>
+<body>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      border: 0;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      padding: 0;
+      width: 100%;
+    }
+
+    canvas {
+      left: 0;
+      position: absolute;
+      top: 0;
+    }
+  </style>
+
+  <canvas></canvas>
+
+  <script src="./sylvester.src.js"></script>
+  <script>
+  var canvas = document.querySelector("canvas")
+  var ctx = canvas.getContext("2d")
+  var sixtyDegrees = Matrix.Rotation(Math.PI / 180 * 60)
+
+  function divideLine (division, start, end) {
+    return $V([
+      start.elements[0] + ((end.elements[0] - start.elements[0]) * division),
+      start.elements[1] + ((end.elements[1] - start.elements[1]) * division)
+    ])
+  }
+
+  function drawLine (parentStart, parentEnd) {
+    var lineLength = parentStart.distanceFrom(parentEnd)
+
+    // stop drawing when it's smaller than 1px
+    if (lineLength <= 1) {
+      ctx.moveTo(parentStart.elements[0], parentStart.elements[1])
+      ctx.lineTo(parentEnd.elements[0], parentEnd.elements[1])
+    }
+    else {
+      var oneThirdPoint = divideLine(1/3, parentStart, parentEnd)
+      var twoThirdPoint = divideLine(1/2, oneThirdPoint, parentEnd)
+      var tipPoint = sixtyDegrees.multiply(oneThirdPoint.subtract(twoThirdPoint)).add(twoThirdPoint)
+      drawLine(parentStart, oneThirdPoint)
+      drawLine(oneThirdPoint, tipPoint)
+      drawLine(tipPoint, twoThirdPoint)
+      drawLine(twoThirdPoint, parentEnd)
+    }
+  }
+
+  function reDraw () {
+    var pageWidth = document.documentElement.clientWidth
+    var pageHeight = document.documentElement.clientHeight
+
+    var top = pageHeight - 20
+
+    canvas.height = pageHeight
+    canvas.width = pageWidth
+
+    ctx.beginPath()
+    drawLine($V([0, top]), $V([pageWidth, top]))
+    ctx.closePath()
+    ctx.stroke()
+  }
+  reDraw()
+  window.addEventListener("resize", reDraw, false)
+
+  </script>
+</html>
